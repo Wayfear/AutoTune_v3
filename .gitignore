@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.vscode/
 # C extensions
 *.so
 
@@ -101,12 +101,9 @@ ENV/
 .mypy_cache/
 Contact GitHub API Training Shop Blog About
 
-middle_data/
 data/
 npy/
 predict/
-origin_data/
-wifi_data/
 multiple_meeting_data/
 true_data/
 *.jpeg
