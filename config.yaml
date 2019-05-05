@@ -1,0 +1,67 @@
+base_conf:
+    origin_data_path: origin_data
+    middle_data_path: middle_data
+    single_meeting_middle_data_path: single_meeting_middle_data
+    mtcnn_origin_data_path: mtcnn
+    model_path: models
+    multiple_meeting_data_path: multiple_meeting_data
+    true_data_path: true_data
+    gpu_num: 1
+
+filter_people:
+   - bo
+   - changhao
+   - qinyidan
+
+
+mac_name:
+    '60:f1:89:84:47:be': example
+
+pre_process:
+    refresh: true
+    show_pic: true
+    mtcnn_threshold:
+        - 0.7
+        - 0.7
+        - 0.9
+    mtcnn_model_path: mtcnn
+    opencv_model_path: opencv
+    image_size: 160
+    mtcnn_mini_size: 40
+    mtcnn_factor: 0.709
+    wifi_threshold: -55
+    wifi_time_interval: 5
+    # every pre_process only act on one date; set it to 0 then all video diff are processed
+    date_to_process: 03-30
+
+
+feature_extraction_classifier:
+    refresh: false
+    # 0 or not give: according to the wifi information
+    meeting_people_num:
+        1: 0
+    piece_num: 1000
+    facenet_model_path: 20180402-114759.pb
+    dbscan_min_sample: 5
+
+
+get_meeting_data:
+    start_time: 04-5-8-00
+    end_time: 10-22-12-00
+    duration_time: 180
+
+context_information:
+    hyper_para:
+      - 0.15
+
+specs:
+    set_gpu: False
+    send_email: False
+
+model_map:
+    128: 4_2_512/model-20170511-185253.ckpt-80000
+    512: 4_2_512/model-20180402-114759.ckpt-275
+
+visualize_features:
+    perplexity: 50
+

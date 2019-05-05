@@ -127,7 +127,6 @@ chanhop*
 
 *.tar
 *.csv
-config.yaml
 models/*
 ass_data/*
 logs/*

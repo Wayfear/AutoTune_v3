@@ -32,18 +32,21 @@ def main(args):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cfg['base_conf']['gpu_num'])
 
-    subdir = '%s_center_loss_factor_%1.2f' % (args.data_dir, args.center_loss_factor)
+    subdir = '%s_center_loss_factor_%1.2f' % (
+        args.data_dir, args.center_loss_factor)
 
     # test = os.path.expanduser(args.logs_base_dir)
     log_dir = os.path.join(project_dir, 'fine_tuning_process', 'logs', subdir)
     if not os.path.isdir(log_dir):  # Create the log directory if it doesn't exist
         os.makedirs(log_dir)
-    model_dir = os.path.join(project_dir, 'fine_tuning_process', 'models', subdir)
+    model_dir = os.path.join(
+        project_dir, 'fine_tuning_process', 'models', subdir)
     if not os.path.isdir(model_dir):  # Create the model directory if it doesn't exist
         os.makedirs(model_dir)
 
     # Write arguments to a text file
-    facenet.write_arguments_to_file(args, os.path.join(log_dir, 'arguments.txt'))
+    facenet.write_arguments_to_file(
+        args, os.path.join(log_dir, 'arguments.txt'))
 
     # Store some git revision info in a text file in the log directory
     src_path, _ = os.path.split(os.path.realpath(__file__))
@@ -51,7 +54,8 @@ def main(args):
 
     np.random.seed(seed=args.seed)
     random.seed(args.seed)
-    data_dir = os.path.join(project_dir, 'fine_tuning_process', 'data', args.data_dir, 'train')
+    data_dir = os.path.join(
+        project_dir, 'fine_tuning_process', 'data', args.data_dir, 'train')
     train_set = facenet.get_dataset(data_dir)
     if args.filter_filename:
         train_set = filter_dataset(train_set, os.path.expanduser(args.filter_filename),
@@ -60,14 +64,17 @@ def main(args):
 
     print('Model directory: %s' % model_dir)
     print('Log directory: %s' % log_dir)
-    pretrained_model = os.path.join(project_dir, 'fine_tuning_process', 'models', cfg['model_map'][args.embedding_size])
+    pretrained_model = os.path.join(
+        project_dir, 'fine_tuning_process', 'models', cfg['model_map'][args.embedding_size])
     print('Pre-trained model: %s' % pretrained_model)
 
     # if args.lfw_dir:
-    lfw_dir = os.path.join(project_dir, 'fine_tuning_process', 'data', args.data_dir, 'test')
+    lfw_dir = os.path.join(
+        project_dir, 'fine_tuning_process', 'data', args.data_dir, 'test')
     print('LFW directory: %s' % lfw_dir)
     # Read the file containing the pairs used for testing
-    lfw_pairs = os.path.join(project_dir, 'fine_tuning_process', 'data', args.data_dir, 'pairs.txt')
+    lfw_pairs = os.path.join(
+        project_dir, 'fine_tuning_process', 'data', args.data_dir, 'pairs.txt')
     pairs = lfw.read_pairs(lfw_pairs)
     # Get the paths for the corresponding images
     lfw_paths, actual_issame = lfw.get_paths_personal(lfw_dir, pairs)
@@ -95,23 +102,28 @@ def main(args):
         index_queue = tf.train.range_input_producer(range_size, num_epochs=None,
                                                     shuffle=True, seed=None, capacity=32)
 
-        index_dequeue_op = index_queue.dequeue_many(args.batch_size * args.epoch_size, 'index_dequeue')
+        index_dequeue_op = index_queue.dequeue_many(
+            args.batch_size * args.epoch_size, 'index_dequeue')
 
-        learning_rate_placeholder = tf.placeholder(tf.float32, name='learning_rate')
+        learning_rate_placeholder = tf.placeholder(
+            tf.float32, name='learning_rate')
 
         batch_size_placeholder = tf.placeholder(tf.int32, name='batch_size')
 
         phase_train_placeholder = tf.placeholder(tf.bool, name='phase_train')
 
-        image_paths_placeholder = tf.placeholder(tf.string, shape=(None, 1), name='image_paths')
+        image_paths_placeholder = tf.placeholder(
+            tf.string, shape=(None, 1), name='image_paths')
 
-        labels_placeholder = tf.placeholder(tf.int64, shape=(None, 1), name='labels')
+        labels_placeholder = tf.placeholder(
+            tf.int64, shape=(None, 1), name='labels')
 
         input_queue = data_flow_ops.FIFOQueue(capacity=100000,
                                               dtypes=[tf.string, tf.int64],
                                               shapes=[(1,), (1,)],
                                               shared_name=None, name=None)
-        enqueue_op = input_queue.enqueue_many([image_paths_placeholder, labels_placeholder], name='enqueue_op')
+        enqueue_op = input_queue.enqueue_many(
+            [image_paths_placeholder, labels_placeholder], name='enqueue_op')
 
         nrof_preprocess_threads = 4
         images_and_labels = []
@@ -122,11 +134,14 @@ def main(args):
                 file_contents = tf.read_file(filename)
                 image = tf.image.decode_image(file_contents, channels=3)
                 if args.random_rotate:
-                    image = tf.py_func(facenet.random_rotate_image, [image], tf.uint8)
+                    image = tf.py_func(
+                        facenet.random_rotate_image, [image], tf.uint8)
                 if args.random_crop:
-                    image = tf.random_crop(image, [args.image_size, args.image_size, 3])
+                    image = tf.random_crop(
+                        image, [args.image_size, args.image_size, 3])
                 else:
-                    image = tf.image.resize_image_with_crop_or_pad(image, args.image_size, args.image_size)
+                    image = tf.image.resize_image_with_crop_or_pad(
+                        image, args.image_size, args.image_size)
                 if args.random_flip:
                     image = tf.image.random_flip_left_right(image)
 
@@ -157,16 +172,20 @@ def main(args):
         #                            scope='FineTuning', reuse=False, trainable=True)
 
         logits = slim.fully_connected(prelogits, nrof_classes, activation_fn=None,
-                                      weights_initializer=tf.truncated_normal_initializer(stddev=0.1),
-                                      weights_regularizer=slim.l2_regularizer(args.weight_decay),
+                                      weights_initializer=tf.truncated_normal_initializer(
+                                          stddev=0.1),
+                                      weights_regularizer=slim.l2_regularizer(
+                                          args.weight_decay),
                                       scope='Logits', reuse=False)
 
         embeddings = tf.nn.l2_normalize(prelogits, 1, 1e-10, name='embeddings')
 
         # Add center loss
         if args.center_loss_factor > 0.0:
-            prelogits_center_loss, _ = facenet.center_loss(prelogits, label_batch, args.center_loss_alfa, nrof_classes)
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, prelogits_center_loss * args.center_loss_factor)
+            prelogits_center_loss, _ = facenet.center_loss(
+                prelogits, label_batch, args.center_loss_alfa, nrof_classes)
+            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,
+                                 prelogits_center_loss * args.center_loss_factor)
             tf.summary.scalar('prelogits_center_loss', prelogits_center_loss)
 
         learning_rate = tf.train.exponential_decay(learning_rate_placeholder, global_step,
@@ -177,12 +196,15 @@ def main(args):
         # Calculate the average cross entropy loss across the batch
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=label_batch, logits=logits, name='cross_entropy_per_example')
-        cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
+        cross_entropy_mean = tf.reduce_mean(
+            cross_entropy, name='cross_entropy')
         tf.add_to_collection('losses', cross_entropy_mean)
 
         # Calculate the total losses
-        regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-        total_loss = tf.add_n([cross_entropy_mean] + regularization_losses, name='total_loss')
+        regularization_losses = tf.get_collection(
+            tf.GraphKeys.REGULARIZATION_LOSSES)
+        total_loss = tf.add_n([cross_entropy_mean] +
+                              regularization_losses, name='total_loss')
 
         # Build a Graph that trains the model with one batch of examples and updates the model parameters
         train_op = facenet.train(total_loss, global_step, args.optimizer,
@@ -190,15 +212,18 @@ def main(args):
 
         # Create a saver
         all_vars = tf.trainable_variables()
-        var_to_restore = [v for v in all_vars if not v.name.startswith('Logits')]
+        var_to_restore = [
+            v for v in all_vars if not v.name.startswith('Logits')]
         saver = tf.train.Saver(var_to_restore, max_to_keep=3)
 
         # Build the summary operation based on the TF collection of Summaries.
         summary_op = tf.summary.merge_all()
 
         # Start running operations on the Graph.
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=args.gpu_memory_fraction)
-        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
+        gpu_options = tf.GPUOptions(
+            per_process_gpu_memory_fraction=args.gpu_memory_fraction)
+        sess = tf.Session(config=tf.ConfigProto(
+            gpu_options=gpu_options, log_device_placement=False))
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
         summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
@@ -209,8 +234,10 @@ def main(args):
             if args.pretrained_model:
                 print('Restoring pretrained model: %s' % pretrained_model)
                 saver.restore(sess, pretrained_model)
-                result = sess.graph.get_tensor_by_name("InceptionResnetV1/Bottleneck/weights:0")
-                pre = sess.graph.get_tensor_by_name("InceptionResnetV1/Block8/Branch_1/Conv2d_0c_3x1/weights:0")
+                result = sess.graph.get_tensor_by_name(
+                    "InceptionResnetV1/Bottleneck/weights:0")
+                pre = sess.graph.get_tensor_by_name(
+                    "InceptionResnetV1/Block8/Branch_1/Conv2d_0c_3x1/weights:0")
                 # tf.stop_gradient(persisted_result)
                 # print(result.eval())
                 # print("======")
@@ -237,11 +264,12 @@ def main(args):
                 # Evaluate on LFW
                 if lfw_dir:
                     acc = evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phase_train_placeholder,
-                             batch_size_placeholder,
-                             embeddings, label_batch, lfw_paths, actual_issame, args.lfw_batch_size,
-                             args.lfw_nrof_folds, log_dir, step, summary_writer, total_loss, prelogits_center_loss)
+                                   batch_size_placeholder,
+                                   embeddings, label_batch, lfw_paths, actual_issame, args.lfw_batch_size,
+                                   args.lfw_nrof_folds, log_dir, step, summary_writer, total_loss, prelogits_center_loss)
                 if acc > pre_acc:
-                    save_variables_and_metagraph(sess, saver, summary_writer, model_dir, subdir, step)
+                    save_variables_and_metagraph(
+                        sess, saver, summary_writer, model_dir, subdir, step)
                     pre_acc = acc
     return model_dir
 
@@ -260,8 +288,10 @@ def filter_dataset(dataset, data_filename, percentile, min_nrof_images_per_class
         distance_to_center = np.array(f.get('distance_to_center'))
         label_list = np.array(f.get('label_list'))
         image_list = np.array(f.get('image_list'))
-        distance_to_center_threshold = find_threshold(distance_to_center, percentile)
-        indices = np.where(distance_to_center >= distance_to_center_threshold)[0]
+        distance_to_center_threshold = find_threshold(
+            distance_to_center, percentile)
+        indices = np.where(distance_to_center >=
+                           distance_to_center_threshold)[0]
         filtered_dataset = dataset
         removelist = []
         for i in indices:
@@ -288,7 +318,8 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
     if args.learning_rate > 0.0:
         lr = args.learning_rate
     else:
-        lr = facenet.get_learning_rate_from_file(learning_rate_schedule_file, epoch)
+        lr = facenet.get_learning_rate_from_file(
+            learning_rate_schedule_file, epoch)
 
     index_epoch = sess.run(index_dequeue_op)
     label_epoch = np.array(label_list)[index_epoch]
@@ -299,7 +330,8 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
     image_paths_array = np.expand_dims(np.array(image_epoch), 1)
     # persisted_result = sess.graph.get_tensor_by_name("InceptionResnetV1/Block8/Conv2d_1x1/weights:0")
     # tf.stop_gradient(persisted_result)
-    sess.run(enqueue_op, {image_paths_placeholder: image_paths_array, labels_placeholder: labels_array})
+    sess.run(enqueue_op, {
+             image_paths_placeholder: image_paths_array, labels_placeholder: labels_array})
 
     # Training loop
     train_time = 0
@@ -312,7 +344,8 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
                 [loss, train_op, global_step, regularization_losses, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, global_step=step)
         else:
-            err, _, step, reg_loss = sess.run([loss, train_op, global_step, regularization_losses], feed_dict=feed_dict)
+            err, _, step, reg_loss = sess.run(
+                [loss, train_op, global_step, regularization_losses], feed_dict=feed_dict)
         duration = time.time() - start_time
         print('Epoch: [%d][%d/%d]\tTime %.3f\tLoss %2.3f\tRegLoss %2.3f' %
               (epoch, batch_number + 1, args.epoch_size, duration, err, np.sum(reg_loss)))
@@ -339,7 +372,8 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     # Enqueue one epoch of image paths and labels
     labels_array = np.expand_dims(np.arange(0, len(image_paths)), 1)
     image_paths_array = np.expand_dims(np.array(image_paths), 1)
-    sess.run(enqueue_op, {image_paths_placeholder: image_paths_array, labels_placeholder: labels_array})
+    sess.run(enqueue_op, {
+             image_paths_placeholder: image_paths_array, labels_placeholder: labels_array})
 
     embedding_size = embeddings.get_shape()[1]
     nrof_images = len(actual_issame) * 2
@@ -349,14 +383,17 @@ def evaluate(sess, enqueue_op, image_paths_placeholder, labels_placeholder, phas
     lab_array = np.zeros((nrof_images,))
 
     for _ in range(nrof_batches):
-        feed_dict = {phase_train_placeholder: False, batch_size_placeholder: batch_size}
-        emb, lab, reg_loss = sess.run([embeddings, labels, regularization_losses], feed_dict=feed_dict)
+        feed_dict = {phase_train_placeholder: False,
+                     batch_size_placeholder: batch_size}
+        emb, lab, reg_loss = sess.run(
+            [embeddings, labels, regularization_losses], feed_dict=feed_dict)
         lab_array[lab] = lab
         emb_array[lab] = emb
 
     assert np.array_equal(lab_array, np.arange(
         nrof_images)) == True, 'Wrong labels used for evaluation, possibly caused by training examples left in the input pipeline'
-    _, _, accuracy, val, val_std, far = lfw.evaluate(emb_array, actual_issame, nrof_folds=nrof_folds)
+    _, _, accuracy, val, val_std, far = lfw.evaluate(
+        emb_array, actual_issame, nrof_folds=nrof_folds)
     # print(labels)
     # print(lab)
     # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -402,8 +439,10 @@ def save_variables_and_metagraph(sess, saver, summary_writer, model_dir, model_n
         print('Metagraph saved in %.2f seconds' % save_time_metagraph)
     summary = tf.Summary()
     # pylint: disable=maybe-no-member
-    summary.value.add(tag='time/save_variables', simple_value=save_time_variables)
-    summary.value.add(tag='time/save_metagraph', simple_value=save_time_metagraph)
+    summary.value.add(tag='time/save_variables',
+                      simple_value=save_time_variables)
+    summary.value.add(tag='time/save_metagraph',
+                      simple_value=save_time_metagraph)
     summary_writer.add_summary(summary, step)
 
 
@@ -495,13 +534,6 @@ def parse_arguments(argv):
     parser.add_argument('--filter_min_nrof_images_per_class', type=int,
                         help='Keep only the classes with this number of examples or more', default=0)
 
-    # Parameters for validation on LFW
-    # parser.add_argument('--lfw_pairs', type=str,
-    #                     help='The file containing the pairs to use for validation.', default='~/data/4_2/test/pairs.txt')
-    parser.add_argument('--lfw_file_ext', type=str,
-                        help='The file extension for the LFW dataset.', default='png', choices=['jpg', 'png'])
-    # parser.add_argument('--lfw_dir', type=str,
-    #                     help='Path to the data directory containing aligned face patches.', default='')
     parser.add_argument('--lfw_batch_size', type=int,
                         help='Number of images to process in a batch in the LFW test set.', default=50)
     parser.add_argument('--lfw_nrof_folds', type=int,
